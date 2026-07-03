@@ -17,7 +17,7 @@ export default function Hero() {
             and enterprise workforce management platforms.
           </p>
           <div className="hero-actions">
-            <a href="#projects" className="btn btn-primary">View My Work</a>
+            <a href="#projects" className="btn btn-primary" onClick={e => { e.preventDefault(); document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' }); }}>View My Work</a>
             <a href="#contact" className="btn btn-outline">Get In Touch</a>
           </div>
         </div>
