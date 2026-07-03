@@ -1,0 +1,205 @@
+.navbar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 100;
+  background: var(--navy);
+  border-bottom: 2px solid var(--gold);
+}
+
+.nav-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+
+.nav-brand {
+  font-family: var(--font);
+  font-size: 1.25rem;
+  color: var(--white) !important;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  list-style: none;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.nav-links > li > a {
+  display: block;
+  padding: 0.4rem 0.75rem;
+  color: var(--gray-200);
+  font-size: 0.88rem;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: color 0.2s;
+  border-radius: 3px;
+}
+
+.nav-links > li > a:hover,
+.nav-links > li > a.active { color: var(--gold); text-decoration: none; }
+
+.chevron-open { transform: rotate(180deg); }
+
+.nav-cta {
+  background: var(--gold) !important;
+  color: var(--navy) !important;
+  padding: 0.4rem 1rem !important;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+.nav-cta:hover { background: var(--gold-light) !important; }
+
+/* ── Projects dropdown ─────────────────────────────── */
+.nav-dropdown-wrap {
+  position: relative;
+}
+
+.nav-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  background: none;
+  border: none;
+  color: var(--gray-200);
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: color 0.2s;
+}
+
+.nav-dropdown-trigger:hover,
+.trigger-active {
+  color: var(--gold);
+}
+
+.chevron {
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.trigger-active .chevron {
+  transform: rotate(180deg);
+}
+
+.nav-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  background: var(--navy-light);
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  border-top: 2px solid var(--gold);
+  border-radius: 4px;
+  list-style: none;
+  min-width: 260px;
+  padding: 0.4rem 0;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  animation: dropDown 0.15s ease;
+  z-index: 101;
+}
+
+@keyframes dropDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  background: none;
+  border: none;
+  color: var(--gray-200);
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.dropdown-item:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--gold);
+}
+
+.dropdown-item-active {
+  color: var(--gold);
+  background: rgba(201, 168, 76, 0.1);
+}
+
+.dropdown-icon {
+  font-size: 1rem;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ── Hamburger (mobile) ────────────────────────────── */
+.nav-toggle {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.nav-toggle span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--white);
+}
+
+@media (max-width: 768px) {
+  .nav-toggle { display: flex; }
+
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 64px;
+    left: 0;
+    right: 0;
+    background: var(--navy-light);
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem 1.5rem;
+    gap: 0.25rem;
+  }
+
+  .nav-links.open { display: flex; }
+
+  .nav-links > li > a,
+  .nav-dropdown-trigger {
+    width: 100%;
+    padding: 0.6rem 0;
+  }
+
+  .nav-dropdown {
+    position: static;
+    border: none;
+    border-left: 2px solid var(--gold);
+    border-radius: 0;
+    box-shadow: none;
+    background: rgba(0,0,0,0.2);
+    margin: 0.25rem 0 0.25rem 0.5rem;
+    padding: 0.25rem 0;
+    min-width: unset;
+  }
+}

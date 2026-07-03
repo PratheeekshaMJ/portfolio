@@ -1,0 +1,309 @@
+import { useState, useEffect, useRef } from 'react';
+import './Projects.css';
+
+const TABLEAU_EMBED = `<div class='tableauPlaceholder' id='viz1783022111647' style='position: relative'><noscript><a href='#'><img alt='Dashboard 1 ' src='https://public.tableau.com/static/images/Fo/Forecasting_17332751589840/Dashboard1/1_rss.png' style='border: none' /></a></noscript><object class='tableauViz' style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /><param name='embed_code_version' value='3' /><param name='site_root' value='' /><param name='name' value='Forecasting_17332751589840/Dashboard1' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https://public.tableau.com/static/images/Fo/Forecasting_17332751589840/Dashboard1/1.png' /><param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-US' /></object></div>`;
+
+const categories = [
+  {
+    id: 'analytics',
+    label: 'Analytics',
+    icon: '📊',
+    projects: [
+      {
+        title: 'Retail Sales & Profit Analytics',
+        industry: 'Retail',
+        role: 'Business Analyst & Data Analyst',
+        duration: '4 months',
+        team: '6 regional teams, BI developers',
+        problem: 'Leadership had no real-time visibility into actual vs. estimated sales and profit by region and product category — Furniture, Office Supplies, and Technology — leading to reactive decision-making and budget overruns.',
+        approach: 'Gathered reporting requirements across 6 regional teams, designed a unified data model in SQL, and built a Tableau dashboard suite covering dual-axis sales vs. profit trends, region-wise forecasting with confidence bands, and segment-level profit distribution.',
+        outcome: 'Real-time dashboards adopted by 120+ users. Technology identified as highest-growth category. Inventory decision speed improved by 40%, stockout incidents decreased by 22% in Q1 post-launch.',
+        tags: ['Tableau', 'SQL', 'Forecasting', 'Power BI'],
+        tableau: TABLEAU_EMBED,
+      },
+      {
+        title: 'Executive KPI Dashboard',
+        industry: 'Corporate',
+        role: 'Business Analyst',
+        duration: '3 months',
+        team: 'C-suite, 4 department heads',
+        problem: 'Executive team lacked a single source of truth for cross-departmental KPIs, relying on fragmented weekly email reports.',
+        approach: 'Ran requirements sessions with C-suite to define 20 top-level KPIs, designed a Power BI dashboard with drill-through capabilities, and established a data refresh cadence.',
+        outcome: 'Monthly reporting time cut by 60%. All executives aligned on a single dashboard; ad-hoc data requests dropped by 45%.',
+        tags: ['Power BI', 'KPI Design', 'Excel', 'SQL'],
+      },
+    ],
+  },
+  {
+    id: 'timeclocks',
+    label: 'Time Clocks',
+    icon: '🕐',
+    projects: [
+      {
+        title: 'Time Clock Hardware Rollout',
+        industry: 'Manufacturing',
+        role: 'Business Analyst',
+        duration: '5 months',
+        team: '200+ locations, IT & HR',
+        problem: 'Paper-based punch cards at 200+ sites caused payroll errors, buddy-punching fraud, and hours of manual reconciliation each pay period.',
+        approach: 'Conducted site surveys, gathered requirements from HR and payroll teams, authored functional specifications for biometric time clock integration, and coordinated UAT across 10 pilot sites before full rollout.',
+        outcome: 'Eliminated buddy-punching incidents. Payroll processing time reduced by 3 hours per cycle. ROI achieved within 8 months of go-live.',
+        tags: ['UAT', 'JIRA', 'HR Systems', 'Process Mapping'],
+      },
+      {
+        title: 'Mobile Clock-In App Implementation',
+        industry: 'Retail',
+        role: 'Lead Business Analyst',
+        duration: '4 months',
+        team: 'Mobile dev team, 3 HR stakeholders',
+        problem: 'Field workers had no way to clock in remotely, leading to inaccurate timesheets and disputes.',
+        approach: 'Defined geo-fencing requirements, authored user stories for GPS-based clock-in/out, facilitated demos with HR, and managed change communication to 500+ employees.',
+        outcome: 'Timesheet disputes down 80%. Geo-fence compliance rate of 97%. App adopted by 500+ employees in week one.',
+        tags: ['Agile', 'Mobile', 'Geo-fencing', 'Confluence'],
+      },
+    ],
+  },
+  {
+    id: 'payrules',
+    label: 'Payrules',
+    icon: '💰',
+    projects: [
+      {
+        title: 'Pay Rule Engine Configuration',
+        industry: 'Healthcare',
+        role: 'Business Analyst',
+        duration: '6 months',
+        team: 'Payroll, Legal, IT teams',
+        problem: 'Complex union pay rules were being applied inconsistently, causing overpayments and compliance violations worth $800K annually.',
+        approach: 'Documented 60+ pay rule scenarios, facilitated workshops with payroll and legal teams, mapped rules to the workforce management system, and validated outputs against historical payroll data.',
+        outcome: 'Compliance violations eliminated. $800K in overpayments recovered. Pay rule accuracy validated at 99.7% post-go-live.',
+        tags: ['Pay Rules', 'Compliance', 'Visio', 'UAT'],
+      },
+      {
+        title: 'Multi-State Pay Compliance',
+        industry: 'Financial Services',
+        role: 'Business Analyst',
+        duration: '5 months',
+        team: 'Legal, HR, 5 state coordinators',
+        problem: 'Expansion into 5 new states required configuring state-specific overtime, break, and premium pay rules within a tight regulatory deadline.',
+        approach: 'Researched state labor laws, translated legal requirements into system configuration specs, and coordinated parallel testing streams across all 5 states with HR and legal sign-off.',
+        outcome: 'All 5 states went live before the regulatory deadline. Zero compliance findings in first external audit post-launch.',
+        tags: ['Compliance', 'Labor Law', 'JIRA', 'SQL'],
+      },
+    ],
+  },
+  {
+    id: 'accruals',
+    label: 'Accruals',
+    icon: '📅',
+    projects: [
+      {
+        title: 'PTO Accrual Policy Redesign',
+        industry: 'Corporate',
+        role: 'Business Analyst',
+        duration: '3 months',
+        team: 'HR, Finance, 800 employees',
+        problem: 'Legacy PTO accrual rules were misaligned with updated HR policy, causing over-accrual and employee disputes across 4 tenure bands.',
+        approach: 'Mapped existing accrual logic, identified 12 policy gaps with HR, authored new accrual rule specifications, and coordinated system configuration and employee communication plan.',
+        outcome: 'Over-accrual corrected for 800 employees. HR dispute tickets dropped by 70%. Policy aligned with state PTO regulations.',
+        tags: ['Accruals', 'HR Policy', 'Process Mapping', 'Excel'],
+      },
+      {
+        title: 'Leave Accrual System Migration',
+        industry: 'Healthcare',
+        role: 'Lead Business Analyst',
+        duration: '4 months',
+        team: 'HR, Payroll, IT migration team',
+        problem: 'Migrating leave accrual balances from a legacy HRIS to a new platform risked data loss and incorrect carry-over calculations for 1,200 employees.',
+        approach: 'Defined data mapping rules for 6 leave types, built validation logic to reconcile legacy vs. new balances, and ran three parallel-test pay cycles before cutover.',
+        outcome: 'Zero balance discrepancies post-migration. All 1,200 employees transitioned with correct carry-over. Project delivered 2 weeks ahead of schedule.',
+        tags: ['Data Migration', 'HRIS', 'SQL', 'UAT'],
+      },
+    ],
+  },
+  {
+    id: 'timekeeping',
+    label: 'Timekeeping KPI & Scheduling',
+    icon: '📋',
+    projects: [
+      {
+        title: 'Timekeeping Compliance KPI Framework',
+        industry: 'Manufacturing',
+        role: 'Business Analyst',
+        duration: '4 months',
+        team: 'Operations, HR, 15 site managers',
+        problem: 'No standardized KPIs existed to measure timekeeping compliance across 15 manufacturing sites, making it impossible to identify chronic violators.',
+        approach: 'Worked with HR and operations to define 8 core timekeeping KPIs (e.g., late punch rate, missed meal break %, unapproved OT), built a Power BI scorecard, and set escalation thresholds per site.',
+        outcome: 'Late punch rate dropped 35% within 2 months of scorecard launch. Management accountability increased with weekly automated reports.',
+        tags: ['KPI Design', 'Power BI', 'Operations', 'HR'],
+      },
+      {
+        title: 'Shift Scheduling Optimization',
+        industry: 'Retail',
+        role: 'Business Analyst',
+        duration: '5 months',
+        team: 'Store managers, workforce planning team',
+        problem: 'Manual shift scheduling took managers 4+ hours per week and regularly resulted in over/understaffing that hurt both customer experience and labor costs.',
+        approach: 'Gathered scheduling constraints from 30 store managers, modeled demand patterns using historical sales data, and defined requirements for an automated scheduling engine integrated with the timekeeping system.',
+        outcome: 'Manager scheduling time reduced from 4 hours to 45 minutes per week. Labor cost variance improved by 12%. Customer satisfaction scores up 8 points.',
+        tags: ['Scheduling', 'Workforce Planning', 'SQL', 'Agile'],
+      },
+    ],
+  },
+  {
+    id: 'forecasting',
+    label: 'Forecasting & Advance Scheduling',
+    icon: '🔮',
+    projects: [
+      {
+        title: 'Workforce Demand Forecasting',
+        industry: 'Retail',
+        role: 'Business Analyst & Data Analyst',
+        duration: '6 months',
+        team: '6 regional teams, BI developers',
+        problem: 'Leadership had no real-time visibility into actual vs. estimated sales and profit by region and product category — Furniture, Office Supplies, and Technology — leading to reactive staffing and budget overruns.',
+        approach: 'Designed a Tableau dashboard suite covering dual-axis sales vs. profit trends, region-wise forecasting with confidence bands, and segment-level profit distribution. Mapped forecast models to actual workforce schedules 4 weeks in advance.',
+        outcome: 'Forecast accuracy improved to 91%. Overstaffing incidents down 30%. Region managers adopted 4-week advance scheduling as standard practice.',
+        tags: ['Tableau', 'Forecasting', 'SQL', 'Power BI'],
+        tableau: TABLEAU_EMBED,
+      },
+      {
+        title: 'Advance Scheduling Rollout',
+        industry: 'Healthcare',
+        role: 'Lead Business Analyst',
+        duration: '5 months',
+        team: 'Nursing, HR, workforce management team',
+        problem: 'Nursing shifts were scheduled only 1 week ahead, causing high agency spend due to last-minute staffing gaps and burnout from unpredictable schedules.',
+        approach: 'Elicited scheduling constraints from nursing leadership, defined 6-week advance scheduling rules, configured preference-based self-scheduling workflows, and managed change communications to 400 nurses.',
+        outcome: 'Agency staffing spend reduced by $2.1M annually. Nurse satisfaction scores improved by 22 points. 6-week schedule visibility achieved across all units.',
+        tags: ['Advance Scheduling', 'Healthcare', 'Change Management', 'JIRA'],
+      },
+    ],
+  },
+];
+
+function TableauEmbed({ html }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    ref.current.innerHTML = html;
+
+    const vizId = 'viz1783022111647';
+    const divElement = ref.current.querySelector(`#${vizId}`);
+    if (!divElement) return;
+
+    const vizElement = divElement.getElementsByTagName('object')[0];
+    const w = ref.current.offsetWidth;
+    vizElement.style.width = '100%';
+    vizElement.style.minHeight = '400px';
+    vizElement.style.height = (w > 500 ? w * 0.6 : 600) + 'px';
+
+    const existing = document.querySelector('script[src*="viz_v1.js"]');
+    if (existing) existing.remove();
+
+    const script = document.createElement('script');
+    script.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';
+    vizElement.parentNode.insertBefore(script, vizElement);
+
+    return () => { if (script.parentNode) script.parentNode.removeChild(script); };
+  }, [html]);
+
+  return <div ref={ref} className="tableau-container" />;
+}
+
+function ProjectModal({ project, onClose }) {
+  useEffect(() => {
+    const onKey = e => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [onClose]);
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className={`modal ${project.tableau ? 'modal-wide' : ''}`} role="dialog" aria-modal="true">
+        <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
+
+        <div className="modal-header">
+          <div>
+            <p className="modal-industry">{project.industry}</p>
+            <h2>{project.title}</h2>
+            <p className="modal-role">{project.role}</p>
+          </div>
+        </div>
+
+        <div className="modal-meta-row">
+          <span className="modal-meta-item"><strong>Duration:</strong> {project.duration}</span>
+          <span className="modal-meta-item"><strong>Team:</strong> {project.team}</span>
+        </div>
+
+        <div className="modal-body">
+          <div className="modal-section">
+            <span className="modal-label">Challenge</span>
+            <p>{project.problem}</p>
+          </div>
+          <div className="modal-section">
+            <span className="modal-label">Approach</span>
+            <p>{project.approach}</p>
+          </div>
+          <div className="modal-section">
+            <span className="modal-label">Outcome</span>
+            <p>{project.outcome}</p>
+          </div>
+        </div>
+
+        {project.tableau && (
+          <div className="modal-tableau">
+            <span className="modal-label">Live Dashboard</span>
+            <TableauEmbed html={project.tableau} />
+          </div>
+        )}
+
+        <div className="modal-tags">
+          {project.tags.map(t => <span key={t} className="tag">{t}</span>)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function Projects({ activeCategory, onCategoryChange }) {
+  const [selected, setSelected] = useState(null);
+
+  const current = categories.find(c => c.id === activeCategory) ?? categories[0];
+
+  return (
+    <section id="projects">
+      <div className="container">
+        <h2 className="section-title">
+          <span className="section-cat-icon">{current.icon}</span> {current.label}
+        </h2>
+        <div className="section-divider" />
+
+        <div className="projects-grid" key={activeCategory}>
+          {current.projects.map((p, i) => (
+            <button key={i} className="project-card" onClick={() => setSelected(p)}>
+              <p className="card-industry">{p.industry}</p>
+              <h3>{p.title}</h3>
+              <p className="card-role">{p.role}</p>
+              <p className="card-preview">{p.problem}</p>
+              <div className="card-tags">
+                {p.tags.map(t => <span key={t} className="tag">{t}</span>)}
+              </div>
+              <div className="card-footer">
+                {p.tableau && <span className="card-badge">📊 Live Dashboard</span>}
+                <span className="card-cta">View Case Study →</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {selected && <ProjectModal project={selected} onClose={() => setSelected(null)} />}
+    </section>
+  );
+}
