@@ -28,7 +28,7 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <div className="nav-container">
-        <Link className="nav-brand" to="/">Your Name</Link>
+        <Link className="nav-brand" to="/">Pratheeeksha Maya Jayaprasad</Link>
 
         <button className="nav-toggle" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
           <span /><span /><span />

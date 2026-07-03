@@ -6,7 +6,7 @@ export default function Hero() {
       <div className="container hero-inner">
         <div className="hero-text">
           <p className="hero-label">Business Analyst</p>
-          <h1>Your Name</h1>
+          <h1>Pratheeeksha Maya Jayaprasad</h1>
           <p className="hero-tagline">
             Bridging the gap between business needs and technical solutions.
           </p>
@@ -23,7 +23,7 @@ export default function Hero() {
         </div>
         <div className="hero-avatar">
           <div className="avatar-placeholder">
-            <span>YN</span>
+            <span>PMJ</span>
           </div>
         </div>
       </div>
