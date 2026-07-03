@@ -9,7 +9,7 @@ export const categories = [
       {
         title: 'Retail Sales & Profit Analytics',
         industry: 'Retail',
-        role: 'Business Analyst & Data Analyst',
+        role: 'WFM Analyst & Data Analyst',
         duration: '4 months',
         team: '6 regional teams, BI developers',
         problem: 'Leadership had no real-time visibility into actual vs. estimated sales and profit by region and product category — Furniture, Office Supplies, and Technology — leading to reactive decision-making and budget overruns.',
@@ -21,7 +21,7 @@ export const categories = [
       {
         title: 'Executive KPI Dashboard',
         industry: 'Corporate',
-        role: 'Business Analyst',
+        role: 'WFM Analyst',
         duration: '3 months',
         team: 'C-suite, 4 department heads',
         problem: 'Executive team lacked a single source of truth for cross-departmental KPIs, relying on fragmented weekly email reports.',
@@ -39,7 +39,7 @@ export const categories = [
       {
         title: 'Time Clock Hardware Rollout',
         industry: 'Manufacturing',
-        role: 'Business Analyst',
+        role: 'WFM Analyst',
         duration: '5 months',
         team: '200+ locations, IT & HR',
         problem: 'Paper-based punch cards at 200+ sites caused payroll errors, buddy-punching fraud, and hours of manual reconciliation each pay period.',
@@ -50,7 +50,7 @@ export const categories = [
       {
         title: 'Mobile Clock-In App Implementation',
         industry: 'Retail',
-        role: 'Lead Business Analyst',
+        role: 'Lead WFM Analyst',
         duration: '4 months',
         team: 'Mobile dev team, 3 HR stakeholders',
         problem: 'Field workers had no way to clock in remotely, leading to inaccurate timesheets and disputes.',
@@ -68,7 +68,7 @@ export const categories = [
       {
         title: 'Pay Rule Engine Configuration',
         industry: 'Healthcare',
-        role: 'Business Analyst',
+        role: 'WFM Analyst',
         duration: '6 months',
         team: 'Payroll, Legal, IT teams',
         problem: 'Complex union pay rules were being applied inconsistently, causing overpayments and compliance violations worth $800K annually.',
@@ -79,7 +79,7 @@ export const categories = [
       {
         title: 'Multi-State Pay Compliance',
         industry: 'Financial Services',
-        role: 'Business Analyst',
+        role: 'WFM Analyst',
         duration: '5 months',
         team: 'Legal, HR, 5 state coordinators',
         problem: 'Expansion into 5 new states required configuring state-specific overtime, break, and premium pay rules within a tight regulatory deadline.',
@@ -97,7 +97,7 @@ export const categories = [
       {
         title: 'PTO Accrual Policy Redesign',
         industry: 'Corporate',
-        role: 'Business Analyst',
+        role: 'WFM Analyst',
         duration: '3 months',
         team: 'HR, Finance, 800 employees',
         problem: 'Legacy PTO accrual rules were misaligned with updated HR policy, causing over-accrual and employee disputes across 4 tenure bands.',
@@ -108,7 +108,7 @@ export const categories = [
       {
         title: 'Leave Accrual System Migration',
         industry: 'Healthcare',
-        role: 'Lead Business Analyst',
+        role: 'Lead WFM Analyst',
         duration: '4 months',
         team: 'HR, Payroll, IT migration team',
         problem: 'Migrating leave accrual balances from a legacy HRIS to a new platform risked data loss and incorrect carry-over calculations for 1,200 employees.',
@@ -126,7 +126,7 @@ export const categories = [
       {
         title: 'Timekeeping Compliance KPI Framework',
         industry: 'Manufacturing',
-        role: 'Business Analyst',
+        role: 'WFM Analyst',
         duration: '4 months',
         team: 'Operations, HR, 15 site managers',
         problem: 'No standardized KPIs existed to measure timekeeping compliance across 15 manufacturing sites, making it impossible to identify chronic violators.',
@@ -137,7 +137,7 @@ export const categories = [
       {
         title: 'Shift Scheduling Optimization',
         industry: 'Retail',
-        role: 'Business Analyst',
+        role: 'WFM Analyst',
         duration: '5 months',
         team: 'Store managers, workforce planning team',
         problem: 'Manual shift scheduling took managers 4+ hours per week and regularly resulted in over/understaffing that hurt both customer experience and labor costs.',
@@ -155,7 +155,7 @@ export const categories = [
       {
         title: 'Workforce Demand Forecasting',
         industry: 'Retail',
-        role: 'Business Analyst & Data Analyst',
+        role: 'WFM Analyst & Data Analyst',
         duration: '6 months',
         team: '6 regional teams, BI developers',
         problem: 'Leadership had no real-time visibility into actual vs. estimated sales and profit by region and product category — Furniture, Office Supplies, and Technology — leading to reactive staffing and budget overruns.',
@@ -167,7 +167,7 @@ export const categories = [
       {
         title: 'Advance Scheduling Rollout',
         industry: 'Healthcare',
-        role: 'Lead Business Analyst',
+        role: 'Lead WFM Analyst',
         duration: '5 months',
         team: 'Nursing, HR, workforce management team',
         problem: 'Nursing shifts were scheduled only 1 week ahead, causing high agency spend due to last-minute staffing gaps and burnout from unpredictable schedules.',
