@@ -1,7 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { categories } from '../data/projectsData';
 import './Navbar.css';
+
+const daProjects = [
+  { id: 'iris',       label: 'Iris Flower Analysis',    icon: '🌸' },
+  { id: 'cars',       label: 'Auto MPG Analysis',        icon: '🚗' },
+  { id: 'sepsis',     label: 'Septic Shock Dashboard',   icon: '🏥' },
+  { id: 'superstore', label: 'Superstore Sales Dashboard',icon: '🏪' },
+];
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -60,7 +66,7 @@ export default function Navbar() {
 
             {dropdownOpen && (
               <ul className="nav-dropdown">
-                {categories.map(cat => (
+                {daProjects.map(cat => (
                   <li key={cat.id}>
                     <button className="dropdown-item" onClick={() => handleCategory(cat.id)}>
                       <span className="dropdown-icon">{cat.icon}</span>

@@ -66,14 +66,30 @@ function ProjectModal({ project, onClose }) {
           <div className="modal-section">
             <span className="modal-label">Challenge</span>
             <p>{project.problem}</p>
+            {project.context && <p className="modal-context">{project.context}</p>}
           </div>
           <div className="modal-section">
             <span className="modal-label">Approach</span>
             <p>{project.approach}</p>
+            {project.steps && (
+              <ul className="modal-steps">
+                {project.steps.map((s, i) => <li key={i}>{s}</li>)}
+              </ul>
+            )}
           </div>
           <div className="modal-section">
             <span className="modal-label">Outcome</span>
             <p>{project.outcome}</p>
+            {project.metrics && (
+              <div className="modal-metrics">
+                {project.metrics.map((m, i) => (
+                  <div key={i} className="metric-card">
+                    <span className="metric-value">{m.value}</span>
+                    <span className="metric-label">{m.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
