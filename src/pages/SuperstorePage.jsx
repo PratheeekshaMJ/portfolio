@@ -192,6 +192,181 @@ function SegmentProfitBar() {
   return <div ref={ref} className="dash-chart-svg"/>;
 }
 
+/* ── Treemap: Category → Sub-category by Sales ──────── */
+function SalesTreemap() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current; if (!el) return; el.innerHTML = '';
+    const W = el.clientWidth || 600, H = 340;
+
+    const nested = d3.groups(orders, d => d.category, d => d.sub)
+      .map(([cat, subs]) => ({
+        name: cat,
+        children: subs.map(([sub, rows]) => ({
+          name: sub,
+          value: d3.sum(rows, r => r.sales),
+          profit: d3.sum(rows, r => r.profit),
+          cat,
+        }))
+      }));
+
+    const root = d3.hierarchy({ name: 'root', children: nested })
+      .sum(d => d.value)
+      .sort((a, b) => b.value - a.value);
+
+    d3.treemap().size([W, H]).padding(3).paddingTop(18)(root);
+
+    const svg = d3.select(el).append('svg').attr('width', W).attr('height', H);
+
+    const catOpacity = d3.scaleLinear().domain([0, d3.max(root.leaves(), d => d.value)]).range([0.45, 0.95]);
+
+    root.children.forEach(catNode => {
+      // Category label header
+      svg.append('rect')
+        .attr('x', catNode.x0).attr('y', catNode.y0)
+        .attr('width', catNode.x1 - catNode.x0).attr('height', 16)
+        .attr('fill', CAT_COLOR(catNode.data.name)).attr('opacity', 0.9);
+      svg.append('text')
+        .attr('x', catNode.x0 + 4).attr('y', catNode.y0 + 11)
+        .attr('font-size', '10px').attr('fill', '#fff').attr('font-weight', '600')
+        .text(catNode.data.name);
+
+      catNode.leaves().forEach(leaf => {
+        const profitable = leaf.data.profit > 0;
+        svg.append('rect')
+          .attr('x', leaf.x0).attr('y', leaf.y0)
+          .attr('width', leaf.x1 - leaf.x0).attr('height', leaf.y1 - leaf.y0)
+          .attr('fill', CAT_COLOR(leaf.data.cat))
+          .attr('opacity', catOpacity(leaf.value))
+          .attr('stroke', '#fff').attr('stroke-width', 1)
+          .append('title').text(`${leaf.data.name}\nSales: $${leaf.value.toFixed(0)}\nProfit: ${profitable?'+':''}$${leaf.data.profit.toFixed(0)}`);
+
+        const bw = leaf.x1 - leaf.x0, bh = leaf.y1 - leaf.y0;
+        if (bw > 45 && bh > 22) {
+          svg.append('text').attr('x', leaf.x0 + bw/2).attr('y', leaf.y0 + bh/2 - 3)
+            .attr('text-anchor','middle').attr('font-size', Math.min(11, bw/6)+'px').attr('fill','#fff').attr('font-weight','600')
+            .text(leaf.data.name.length > 10 ? leaf.data.name.substring(0,10)+'…' : leaf.data.name);
+          svg.append('text').attr('x', leaf.x0 + bw/2).attr('y', leaf.y0 + bh/2 + 11)
+            .attr('text-anchor','middle').attr('font-size', '10px').attr('fill','rgba(255,255,255,0.85)')
+            .text(`$${(leaf.value/1000).toFixed(0)}k`);
+        }
+
+        // profit indicator dot
+        if (bw > 20 && bh > 20) {
+          svg.append('circle').attr('cx', leaf.x1-7).attr('cy', leaf.y0+7).attr('r',4)
+            .attr('fill', profitable ? '#27ae60' : '#c0392b');
+        }
+      });
+    });
+
+    // Legend for profit dot
+    const leg = svg.append('g').attr('transform',`translate(4,${H-14})`);
+    leg.append('circle').attr('cx',5).attr('cy',5).attr('r',4).attr('fill','#27ae60');
+    leg.append('text').attr('x',13).attr('y',9).attr('font-size','10px').attr('fill','#555').text('Profitable');
+    leg.append('circle').attr('cx',85).attr('cy',5).attr('r',4).attr('fill','#c0392b');
+    leg.append('text').attr('x',93).attr('y',9).attr('font-size','10px').attr('fill','#555').text('Loss-making');
+  }, []);
+  return <div ref={ref} className="dash-chart-svg" />;
+}
+
+/* ── Grouped Bar: Sales by Region × Category ────────── */
+function RegionCategoryGroupedBar() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current; if (!el) return; el.innerHTML = '';
+    const W = el.clientWidth || 560, H = 300;
+    const m = {top:30,right:20,bottom:45,left:60};
+    const w = W-m.left-m.right, h = H-m.top-m.bottom;
+
+    const regions = ['West','East','Central','South'];
+    const cats = ['Furniture','Office Supplies','Technology'];
+    const rollup = d3.rollup(orders, v => d3.sum(v,d=>d.sales), d=>d.region, d=>d.category);
+    const data = regions.map(r => ({
+      region: r,
+      values: cats.map(c => ({ cat: c, sales: rollup.get(r)?.get(c) || 0 }))
+    }));
+
+    const svg = d3.select(el).append('svg').attr('width',W).attr('height',H);
+    const g = svg.append('g').attr('transform',`translate(${m.left},${m.top})`);
+
+    const x0 = d3.scaleBand().domain(regions).range([0,w]).padding(0.25);
+    const x1 = d3.scaleBand().domain(cats).range([0,x0.bandwidth()]).padding(0.08);
+    const y = d3.scaleLinear().domain([0, d3.max(data, d => d3.max(d.values, v => v.sales))*1.1]).range([h,0]);
+
+    g.append('g').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x0));
+    g.append('g').call(d3.axisLeft(y).ticks(5).tickFormat(d=>`$${(d/1000).toFixed(0)}k`));
+    g.append('g').selectAll('line').data(y.ticks(5)).enter().append('line')
+      .attr('x1',0).attr('x2',w).attr('y1',d=>y(d)).attr('y2',d=>y(d))
+      .attr('stroke','#f4f4f4').attr('stroke-dasharray','3,3');
+
+    data.forEach(d => {
+      const rg = g.append('g').attr('transform',`translate(${x0(d.region)},0)`);
+      d.values.forEach(v => {
+        rg.append('rect')
+          .attr('x',x1(v.cat)).attr('width',x1.bandwidth())
+          .attr('y',y(v.sales)).attr('height',h-y(v.sales))
+          .attr('fill',CAT_COLOR(v.cat)).attr('rx',2).attr('opacity',0.85)
+          .append('title').text(`${d.region} – ${v.cat}: $${(v.sales/1000).toFixed(1)}k`);
+      });
+    });
+
+    // Legend
+    const leg = svg.append('g').attr('transform',`translate(${m.left},${m.top-20})`);
+    cats.forEach((c,i) => {
+      leg.append('rect').attr('x',i*155).attr('y',0).attr('width',12).attr('height',10).attr('fill',CAT_COLOR(c)).attr('rx',2);
+      leg.append('text').attr('x',i*155+16).attr('y',9).attr('font-size','11px').attr('fill','#444').text(c);
+    });
+    svg.append('text').attr('x',m.left+w/2).attr('y',H-5)
+      .attr('text-anchor','middle').attr('font-size','12px').attr('fill','#555').text('Region');
+    svg.append('text').attr('transform',`translate(14,${m.top+h/2}) rotate(-90)`)
+      .attr('text-anchor','middle').attr('font-size','12px').attr('fill','#555').text('Sales');
+  },[]);
+  return <div ref={ref} className="dash-chart-svg"/>;
+}
+
+/* ── Scatter: Profit vs Discount ───────────────────── */
+function DiscountProfitScatter() {
+  const ref = useRef(null);
+  useEffect(()=>{
+    const el=ref.current; if(!el) return; el.innerHTML='';
+    const W=el.clientWidth||500, H=300;
+    const m={top:20,right:130,bottom:46,left:60};
+    const w=W-m.left-m.right, h=H-m.top-m.bottom;
+    const svg=d3.select(el).append('svg').attr('width',W).attr('height',H);
+    const g=svg.append('g').attr('transform',`translate(${m.left},${m.top})`);
+
+    const x=d3.scaleLinear().domain([0,d3.max(orders,d=>d.discount)+0.05]).range([0,w]);
+    const y=d3.scaleLinear().domain([d3.min(orders,d=>d.profit)-20,d3.max(orders,d=>d.profit)+20]).range([h,0]);
+    g.append('g').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x).tickFormat(d3.format('.0%')));
+    g.append('g').call(d3.axisLeft(y).ticks(6).tickFormat(d=>`$${d}`));
+
+    // zero profit line
+    g.append('line').attr('x1',0).attr('x2',w).attr('y1',y(0)).attr('y2',y(0))
+      .attr('stroke','#e15759').attr('stroke-dasharray','4,3').attr('stroke-width',1.5);
+    g.append('text').attr('x',w+4).attr('y',y(0)+4).attr('font-size','9px').attr('fill','#e15759').text('Break-even');
+
+    g.append('g').selectAll('line').data(y.ticks(6)).enter().append('line')
+      .attr('x1',0).attr('x2',w).attr('y1',d=>y(d)).attr('y2',d=>y(d))
+      .attr('stroke','#f4f4f4').attr('stroke-dasharray','3,3');
+
+    g.selectAll('circle').data(orders).enter().append('circle')
+      .attr('cx',d=>x(d.discount)).attr('cy',d=>y(d.profit)).attr('r',4)
+      .attr('fill',d=>CAT_COLOR(d.category)).attr('opacity',0.6)
+      .append('title').text(d=>`${d.product.substring(0,30)}\nDiscount: ${(d.discount*100).toFixed(0)}%\nProfit: $${d.profit.toFixed(2)}`);
+
+    const leg=svg.append('g').attr('transform',`translate(${m.left+w+8},${m.top})`);
+    ['Furniture','Office Supplies','Technology'].forEach((c,i)=>{
+      leg.append('circle').attr('cx',7).attr('cy',i*22).attr('r',5).attr('fill',CAT_COLOR(c)).attr('opacity',0.75);
+      leg.append('text').attr('x',18).attr('y',i*22+4).attr('font-size','10px').attr('fill','#444').text(c);
+    });
+    svg.append('text').attr('x',m.left+w/2).attr('y',H-5)
+      .attr('text-anchor','middle').attr('font-size','12px').attr('fill','#555').text('Discount Rate');
+    svg.append('text').attr('transform',`translate(14,${m.top+h/2}) rotate(-90)`)
+      .attr('text-anchor','middle').attr('font-size','12px').attr('fill','#555').text('Profit ($)');
+  },[]);
+  return <div ref={ref} className="dash-chart-svg"/>;
+}
+
 export default function SuperstorePage() {
   return (
     <div className="dash-page">
@@ -291,6 +466,33 @@ export default function SuperstorePage() {
               </tbody>
             </table>
           </div>
+        </section>
+
+        <section className="dash-section">
+          <h2>Treemap — Category & Sub-Category Breakdown</h2>
+          <p>A <strong>treemap</strong> uses nested rectangles to show hierarchy and proportion simultaneously. Each large rectangle is a category; inside it, each smaller rectangle is a sub-category. Bigger area = more sales. The coloured dot in the corner shows whether that sub-category is profitable (green) or loss-making (red).</p>
+          <div className="dash-chart-wrap">
+            <SalesTreemap/>
+          </div>
+          <div className="dash-insight">Copiers dominate Technology — a small number of high-ticket orders. Chairs and Tables are the largest Furniture sub-categories but carry profit risk (red dots) when discounted heavily. Office Supplies are spread evenly across many small sub-categories, each profitable individually.</div>
+        </section>
+
+        <section className="dash-section">
+          <h2>Grouped Bar — Sales by Region and Category</h2>
+          <p>A <strong>grouped bar chart</strong> lets you compare multiple series side-by-side within each group. Here, each region has three bars — one per product category — so you can instantly see which category drives each region's sales and how regions compare within a category.</p>
+          <div className="dash-chart-wrap">
+            <RegionCategoryGroupedBar/>
+          </div>
+          <div className="dash-insight">Technology leads in every region, but particularly in the West. The South has the lowest sales across all three categories — a consistent gap that points to under-penetration rather than any single category problem. Office Supplies are remarkably even across regions, suggesting a commodity-like, need-based buying pattern.</div>
+        </section>
+
+        <section className="dash-section">
+          <h2>Scatter Plot — Does Discounting Hurt Profit?</h2>
+          <p>This scatter plot plots every order line: x = discount given, y = profit earned. The red dashed line is the break-even point (zero profit). Points below the line are loss-making orders. Colour = category.</p>
+          <div className="dash-chart-wrap">
+            <DiscountProfitScatter/>
+          </div>
+          <div className="dash-insight">Orders with 0% discount are mostly profitable. As discounts rise above 40%, almost every order becomes loss-making regardless of category. Furniture (blue) has the most loss-making orders — it is the category most frequently discounted above the threshold. The data makes a clear case: discounts above 30–35% destroy margin.</div>
         </section>
 
         <section className="dash-section">

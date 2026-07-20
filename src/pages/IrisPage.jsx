@@ -143,6 +143,167 @@ const stats = SPECIES.map(sp => {
   return { sp, sl: avg('sl'), sw: avg('sw'), pl: avg('pl'), pw: avg('pw'), n: rows.length };
 });
 
+const FEAT_KEYS = ['sl','sw','pl','pw'];
+const FEAT_LABELS = { sl:'Sepal Length', sw:'Sepal Width', pl:'Petal Length', pw:'Petal Width' };
+
+/* ── Parallel Coordinates ─────────────────────────────── */
+function ParallelCoords() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current; if (!el) return; el.innerHTML = '';
+    const W = el.clientWidth || 700, H = 320;
+    const m = { top: 40, right: 40, bottom: 20, left: 40 };
+    const w = W - m.left - m.right, h = H - m.top - m.bottom;
+    const svg = d3.select(el).append('svg').attr('width', W).attr('height', H);
+    const g = svg.append('g').attr('transform', `translate(${m.left},${m.top})`);
+
+    const xScale = d3.scalePoint().domain(FEAT_KEYS).range([0, w]);
+    const yScales = {};
+    FEAT_KEYS.forEach(k => {
+      yScales[k] = d3.scaleLinear().domain(d3.extent(irisData, d => d[k])).nice().range([h, 0]);
+    });
+
+    // Gridlines per axis
+    FEAT_KEYS.forEach(k => {
+      const gx = g.append('g').attr('transform', `translate(${xScale(k)},0)`);
+      gx.call(d3.axisLeft(yScales[k]).ticks(5).tickSize(-4));
+      gx.select('.domain').attr('stroke', '#ccc');
+      gx.selectAll('text').attr('x', -8).attr('font-size', '10px').attr('fill', '#666');
+      // axis label
+      svg.append('text').attr('x', m.left + xScale(k)).attr('y', m.top - 12)
+        .attr('text-anchor','middle').attr('font-size','11px').attr('fill','#333').attr('font-weight','600')
+        .text(FEAT_LABELS[k]);
+    });
+
+    // One path per flower
+    const line = d3.line().x(([k]) => xScale(k)).y(([k, v]) => yScales[k](v));
+    irisData.forEach(d => {
+      g.append('path')
+        .datum(FEAT_KEYS.map(k => [k, d[k]]))
+        .attr('d', line)
+        .attr('fill', 'none')
+        .attr('stroke', COLORS[d.species])
+        .attr('stroke-width', 1.2)
+        .attr('opacity', 0.45);
+    });
+
+    // Legend
+    const leg = svg.append('g').attr('transform', `translate(${m.left + w - 130}, ${m.top - 35})`);
+    SPECIES.forEach((s, i) => {
+      leg.append('line').attr('x1', i*90).attr('x2', i*90+18).attr('y1',0).attr('y2',0)
+        .attr('stroke', COLORS[s]).attr('stroke-width', 2);
+      leg.append('text').attr('x', i*90+22).attr('y', 4).attr('font-size','11px').attr('fill','#444').text(s);
+    });
+  }, []);
+  return <div ref={ref} className="dash-chart-svg" />;
+}
+
+/* ── Correlation Heatmap ──────────────────────────────── */
+function CorrHeatmap() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current; if (!el) return; el.innerHTML = '';
+    const W = el.clientWidth || 420, H = 360;
+    const m = { top: 60, right: 20, bottom: 20, left: 100 };
+    const w = W - m.left - m.right, h = H - m.top - m.bottom;
+    const cell = Math.min(w, h) / FEAT_KEYS.length;
+
+    const corr = (a, b) => {
+      const ma = d3.mean(a), mb = d3.mean(b);
+      return d3.sum(a.map((v, i) => (v-ma)*(b[i]-mb))) /
+        Math.sqrt(d3.sum(a.map(v => (v-ma)**2)) * d3.sum(b.map(v => (v-mb)**2)));
+    };
+
+    const pairs = [];
+    FEAT_KEYS.forEach(r => FEAT_KEYS.forEach(c => {
+      pairs.push({ r, c, v: corr(irisData.map(d=>d[r]), irisData.map(d=>d[c])) });
+    }));
+
+    const color = d3.scaleSequential(d3.interpolateRdBu).domain([1, -1]);
+    const svg = d3.select(el).append('svg').attr('width', W).attr('height', H);
+    const g = svg.append('g').attr('transform', `translate(${m.left},${m.top})`);
+
+    // Column labels
+    FEAT_KEYS.forEach((k, i) => {
+      svg.append('text').attr('x', m.left + i*cell + cell/2).attr('y', m.top - 8)
+        .attr('text-anchor','middle').attr('font-size','11px').attr('fill','#333').attr('font-weight','600')
+        .text(FEAT_LABELS[k].replace(' ','\n'));
+      svg.append('text').attr('x', m.left - 8).attr('y', m.top + i*cell + cell/2 + 4)
+        .attr('text-anchor','end').attr('font-size','11px').attr('fill','#333').attr('font-weight','600')
+        .text(FEAT_LABELS[k]);
+    });
+
+    pairs.forEach(({r, c, v}) => {
+      const xi = FEAT_KEYS.indexOf(c), yi = FEAT_KEYS.indexOf(r);
+      g.append('rect')
+        .attr('x', xi*cell).attr('y', yi*cell)
+        .attr('width', cell-2).attr('height', cell-2)
+        .attr('fill', color(v)).attr('rx', 3);
+      g.append('text')
+        .attr('x', xi*cell + cell/2).attr('y', yi*cell + cell/2 + 4)
+        .attr('text-anchor','middle').attr('font-size','11px')
+        .attr('fill', Math.abs(v) > 0.5 ? '#fff' : '#333')
+        .text(v.toFixed(2));
+    });
+
+    // Colorbar
+    const cbW = 12, cbH = h;
+    const cbG = svg.append('g').attr('transform', `translate(${m.left + FEAT_KEYS.length*cell + 10}, ${m.top})`);
+    const cbSteps = 20;
+    d3.range(cbSteps).forEach(i => {
+      cbG.append('rect').attr('x',0).attr('y', i*(cbH/cbSteps))
+        .attr('width', cbW).attr('height', cbH/cbSteps + 1)
+        .attr('fill', color(1 - (i / (cbSteps-1)) * 2));
+    });
+    cbG.append('text').attr('x', cbW+4).attr('y', 10).attr('font-size','10px').attr('fill','#555').text('+1');
+    cbG.append('text').attr('x', cbW+4).attr('y', cbH/2+4).attr('font-size','10px').attr('fill','#555').text('0');
+    cbG.append('text').attr('x', cbW+4).attr('y', cbH).attr('font-size','10px').attr('fill','#555').text('−1');
+  }, []);
+  return <div ref={ref} className="dash-chart-svg" />;
+}
+
+/* ── Violin Plot ──────────────────────────────────────── */
+function ViolinPlot({ feature, label }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current; if (!el) return; el.innerHTML = '';
+    const W = el.clientWidth || 420, H = 300;
+    const m = { top: 20, right: 20, bottom: 40, left: 50 };
+    const w = W - m.left - m.right, h = H - m.top - m.bottom;
+    const svg = d3.select(el).append('svg').attr('width', W).attr('height', H);
+    const g = svg.append('g').attr('transform', `translate(${m.left},${m.top})`);
+
+    const x = d3.scaleBand().domain(SPECIES).range([0, w]).padding(0.25);
+    const allVals = irisData.map(d => d[feature]);
+    const y = d3.scaleLinear().domain([d3.min(allVals)-0.3, d3.max(allVals)+0.3]).range([h, 0]);
+    g.append('g').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x));
+    g.append('g').call(d3.axisLeft(y).ticks(5));
+
+    SPECIES.forEach(sp => {
+      const vals = irisData.filter(d => d.species === sp).map(d => d[feature]).sort(d3.ascending);
+      const kde = (kernel, thresholds, data) => thresholds.map(x => [x, d3.mean(data, v => kernel(x-v))]);
+      const epanechnikov = bw => v => Math.abs(v /= bw) <= 1 ? 0.75*(1-v*v)/bw : 0;
+      const thresholds = d3.range(y.domain()[0], y.domain()[1], 0.05);
+      const density = kde(epanechnikov(0.3), thresholds, vals);
+      const maxD = d3.max(density, d => d[1]);
+      const xViol = d3.scaleLinear().domain([-maxD, maxD]).range([0, x.bandwidth()]);
+      const xc = x(sp);
+      const area = d3.area()
+        .y(d => y(d[0])).x0(d => xc + xViol(-d[1])).x1(d => xc + xViol(d[1]))
+        .curve(d3.curveCatmullRom);
+      g.append('path').datum(density).attr('d', area)
+        .attr('fill', COLORS[sp]).attr('opacity', 0.65).attr('stroke', COLORS[sp]).attr('stroke-width', 1);
+      // median dot
+      const med = d3.quantile(vals, 0.5);
+      g.append('circle').attr('cx', xc + x.bandwidth()/2).attr('cy', y(med)).attr('r', 4)
+        .attr('fill', '#fff').attr('stroke', COLORS[sp]).attr('stroke-width', 2);
+    });
+    svg.append('text').attr('transform',`translate(14,${m.top+h/2}) rotate(-90)`)
+      .attr('text-anchor','middle').attr('font-size','12px').attr('fill','#555').text(label);
+  }, [feature, label]);
+  return <div ref={ref} className="dash-chart-svg" />;
+}
+
 export default function IrisPage() {
   return (
     <div className="dash-page">
@@ -271,6 +432,52 @@ export default function IrisPage() {
           <p>A histogram counts how many flowers fall into each size bucket. The bimodal (two-humped) shape below is a telltale sign that two distinct groups are hiding in the data — setosa on the left, and versicolor + virginica on the right.</p>
           <div className="dash-chart-wrap" style={{maxWidth:520}}>
             <HistogramPanel />
+          </div>
+        </section>
+
+        {/* Violin plots */}
+        <section className="dash-section">
+          <h2>Violin Plots — Shape of the Distribution</h2>
+          <p>A violin plot is like a box plot but shows the full <strong>shape</strong> of the distribution — not just the middle 50%. Where the violin is widest, more flowers have that measurement. Where it narrows, fewer do. The white dot in the centre is the median.</p>
+          <div className="dash-chart-grid">
+            {[
+              {feature:'sl', label:'Sepal Length (cm)', title:'Sepal Length'},
+              {feature:'sw', label:'Sepal Width (cm)',  title:'Sepal Width'},
+              {feature:'pl', label:'Petal Length (cm)', title:'Petal Length'},
+              {feature:'pw', label:'Petal Width (cm)',  title:'Petal Width'},
+            ].map(b => (
+              <div key={b.feature} className="dash-chart-wrap">
+                <h3 className="dash-chart-title">{b.title}</h3>
+                <ViolinPlot feature={b.feature} label={b.label} />
+              </div>
+            ))}
+          </div>
+          <div className="dash-insight">
+            The petal length violin for setosa is very narrow and sits at the bottom — all 50 setosa flowers cluster tightly between 1.0 and 1.9 cm. The virginica violin is wide and tall, showing much more variation. This shape difference is as informative as the position.
+          </div>
+        </section>
+
+        {/* Parallel coordinates */}
+        <section className="dash-section">
+          <h2>Parallel Coordinates — All 4 Measurements at Once</h2>
+          <p>A parallel coordinates plot shows <strong>all four measurements simultaneously</strong> for every flower. Each vertical axis is one measurement. Each coloured line is one flower, traced across all four axes. Lines that stay grouped together indicate species that are similar in all dimensions.</p>
+          <div className="dash-chart-wrap">
+            <ParallelCoords />
+          </div>
+          <div className="dash-insight">
+            Blue lines (setosa) stay low on the petal axes but high on sepal width — a completely different profile from the other two. Orange (versicolor) and green (virginica) follow similar paths but at different heights, showing they share a shape but differ in size.
+          </div>
+        </section>
+
+        {/* Correlation heatmap */}
+        <section className="dash-section">
+          <h2>Correlation Heatmap — Which Measurements Move Together?</h2>
+          <p>A heatmap colours each cell by how strongly two measurements are correlated. <strong>Dark red = strongly positive</strong> (both go up together). <strong>Dark blue = strongly negative</strong> (one goes up as the other goes down). White or light = no relationship.</p>
+          <div className="dash-chart-wrap" style={{maxWidth:440}}>
+            <CorrHeatmap />
+          </div>
+          <div className="dash-insight">
+            Petal Length and Petal Width are very strongly correlated with each other (close to +0.96) — flowers with long petals also have wide petals. Sepal Width is weakly or even negatively correlated with the others, which is why it is the least useful single feature for identifying species.
           </div>
         </section>
 

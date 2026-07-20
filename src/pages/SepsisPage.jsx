@@ -159,6 +159,172 @@ function FeatureBoxPlot() {
   return <div ref={ref} className="dash-chart-svg"/>;
 }
 
+/* ── Radar Chart: avg vitals shock vs no-shock ──────── */
+function RadarChart() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current; if (!el) return; el.innerHTML = '';
+    const W = el.clientWidth || 420, H = 360;
+    const cx = W/2, cy = H/2, radius = Math.min(W,H)/2 - 60;
+
+    const axes = [
+      {key:'HR',    label:'Heart Rate',      max:150, min:80},
+      {key:'RespRate',label:'Resp Rate',     max:40,  min:12},
+      {key:'Lactate',label:'Lactate',        max:10,  min:0},
+      {key:'SOFA',  label:'SOFA Score',      max:18,  min:0},
+      {key:'WBC',   label:'WBC Count',       max:32,  min:9},
+      {key:'Temp',  label:'Temperature',     max:41,  min:37},
+    ];
+    const N = axes.length;
+    const angle = i => (Math.PI*2*i/N) - Math.PI/2;
+    const scale = (val, {min, max}) => (val-min)/(max-min);
+    const pt = (i, r) => [cx + r*Math.cos(angle(i)), cy + r*Math.sin(angle(i))];
+
+    const groups = [
+      {label:'Septic Shock', data:shock,   color:'#e15759'},
+      {label:'Sepsis Only',  data:noShock, color:'#4e79a7'},
+    ];
+
+    const svg = d3.select(el).append('svg').attr('width',W).attr('height',H);
+
+    // Grid circles
+    [0.25,0.5,0.75,1].forEach(t => {
+      svg.append('polygon')
+        .attr('points', axes.map((_,i) => pt(i, radius*t).join(',')).join(' '))
+        .attr('fill','none').attr('stroke','#ddd').attr('stroke-width',1);
+    });
+
+    // Axis lines + labels
+    axes.forEach((ax, i) => {
+      const [x2,y2] = pt(i, radius);
+      svg.append('line').attr('x1',cx).attr('y1',cy).attr('x2',x2).attr('y2',y2)
+        .attr('stroke','#ccc').attr('stroke-width',1);
+      const [lx,ly] = pt(i, radius+22);
+      svg.append('text').attr('x',lx).attr('y',ly)
+        .attr('text-anchor','middle').attr('dominant-baseline','middle')
+        .attr('font-size','11px').attr('fill','#444').attr('font-weight','600').text(ax.label);
+    });
+
+    // Data polygons
+    groups.forEach(({label, data, color}) => {
+      const avgs = axes.map(ax => d3.mean(data, d => d[ax.key]));
+      const points = axes.map((ax,i) => pt(i, radius * scale(avgs[i], ax)));
+      svg.append('polygon')
+        .attr('points', points.map(p=>p.join(',')).join(' '))
+        .attr('fill', color).attr('opacity', 0.25)
+        .attr('stroke', color).attr('stroke-width', 2.5);
+      points.forEach(([x,y], i) => {
+        svg.append('circle').attr('cx',x).attr('cy',y).attr('r',4)
+          .attr('fill',color).attr('stroke','#fff').attr('stroke-width',1.5)
+          .append('title').text(`${label} — ${axes[i].label}: ${d3.mean(data,d=>d[axes[i].key]).toFixed(1)}`);
+      });
+    });
+
+    // Legend
+    const leg = svg.append('g').attr('transform',`translate(${W/2-80},${H-28})`);
+    groups.forEach(({label,color},i) => {
+      leg.append('rect').attr('x',i*140).attr('y',0).attr('width',14).attr('height',10).attr('fill',color).attr('opacity',0.6);
+      leg.append('text').attr('x',i*140+18).attr('y',9).attr('font-size','11px').attr('fill','#444').text(label);
+    });
+  }, []);
+  return <div ref={ref} className="dash-chart-svg" />;
+}
+
+/* ── Stacked Bar: outcome by age group ──────────────── */
+function AgeGroupStackedBar() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current; if (!el) return; el.innerHTML = '';
+    const groups = [{label:'30–45',min:30,max:45},{label:'46–60',min:46,max:60},{label:'61–75',min:61,max:75},{label:'76+',min:76,max:99}];
+    const data = groups.map(g => {
+      const pts = sepsisData.filter(d => d.age >= g.min && d.age <= g.max);
+      const sh = pts.filter(d => d.outcome===1).length;
+      return {label:g.label, shock:sh, noShock:pts.length-sh, total:pts.length};
+    });
+
+    const W = el.clientWidth||440, H=260;
+    const m={top:20,right:100,bottom:40,left:55};
+    const w=W-m.left-m.right, h=H-m.top-m.bottom;
+    const svg=d3.select(el).append('svg').attr('width',W).attr('height',H);
+    const g=svg.append('g').attr('transform',`translate(${m.left},${m.top})`);
+
+    const x=d3.scaleBand().domain(data.map(d=>d.label)).range([0,w]).padding(0.3);
+    const y=d3.scaleLinear().domain([0,d3.max(data,d=>d.total)+2]).range([h,0]);
+    g.append('g').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x));
+    g.append('g').call(d3.axisLeft(y).ticks(5));
+
+    data.forEach(d => {
+      // No-shock (bottom)
+      g.append('rect').attr('x',x(d.label)).attr('width',x.bandwidth())
+        .attr('y',y(d.noShock)).attr('height',h-y(d.noShock))
+        .attr('fill','#4e79a7').attr('opacity',0.8).attr('rx',2)
+        .append('title').text(`${d.label}: ${d.noShock} sepsis-only`);
+      // Shock (top)
+      g.append('rect').attr('x',x(d.label)).attr('width',x.bandwidth())
+        .attr('y',y(d.total)).attr('height',y(d.noShock)-y(d.total))
+        .attr('fill','#e15759').attr('opacity',0.85).attr('rx',2)
+        .append('title').text(`${d.label}: ${d.shock} septic shock`);
+      // shock % label
+      const pct=(d.shock/d.total*100).toFixed(0);
+      g.append('text').attr('x',x(d.label)+x.bandwidth()/2).attr('y',y(d.total)-5)
+        .attr('text-anchor','middle').attr('font-size','11px').attr('fill','#c0392b').attr('font-weight','600')
+        .text(`${pct}%`);
+    });
+
+    const leg=svg.append('g').attr('transform',`translate(${m.left+w+8},${m.top})`);
+    [{c:'#e15759',l:'Septic Shock'},{c:'#4e79a7',l:'Sepsis Only'}].forEach(({c,l},i)=>{
+      leg.append('rect').attr('x',0).attr('y',i*22).attr('width',12).attr('height',12).attr('fill',c).attr('opacity',0.85);
+      leg.append('text').attr('x',16).attr('y',i*22+10).attr('font-size','11px').attr('fill','#444').text(l);
+    });
+    svg.append('text').attr('x',m.left+w/2).attr('y',H-4)
+      .attr('text-anchor','middle').attr('font-size','12px').attr('fill','#555').text('Age Group');
+    svg.append('text').attr('transform',`translate(14,${m.top+h/2}) rotate(-90)`)
+      .attr('text-anchor','middle').attr('font-size','12px').attr('fill','#555').text('Patient Count');
+  },[]);
+  return <div ref={ref} className="dash-chart-svg"/>;
+}
+
+/* ── Dot Strip Plot: Lactate distribution ───────────── */
+function StripPlot() {
+  const ref = useRef(null);
+  useEffect(()=>{
+    const el=ref.current; if(!el) return; el.innerHTML='';
+    const W=el.clientWidth||500, H=200;
+    const m={top:30,right:20,bottom:40,left:110};
+    const w=W-m.left-m.right, h=H-m.top-m.bottom;
+    const svg=d3.select(el).append('svg').attr('width',W).attr('height',H);
+    const g=svg.append('g').attr('transform',`translate(${m.left},${m.top})`);
+
+    const rows=[{label:'Septic Shock',data:shock,color:'#e15759'},{label:'Sepsis Only',data:noShock,color:'#4e79a7'}];
+    const x=d3.scaleLinear().domain([0,d3.max(sepsisData,d=>d.Lactate)+0.5]).range([0,w]);
+    const y=d3.scaleBand().domain(rows.map(r=>r.label)).range([0,h]).padding(0.3);
+    g.append('g').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x).ticks(6));
+    g.append('g').call(d3.axisLeft(y));
+
+    // danger zone
+    g.append('rect').attr('x',x(2)).attr('y',0).attr('width',x(4)-x(2)).attr('height',h)
+      .attr('fill','#f39c12').attr('opacity',0.08);
+    g.append('rect').attr('x',x(4)).attr('y',0).attr('width',w-x(4)).attr('height',h)
+      .attr('fill','#e15759').attr('opacity',0.08);
+    g.append('text').attr('x',x(2)+4).attr('y',-5).attr('font-size','9px').attr('fill','#c0392b').text('Concern >2');
+    g.append('text').attr('x',x(4)+4).attr('y',-5).attr('font-size','9px').attr('fill','#c0392b').text('Critical >4');
+
+    rows.forEach(({label,data,color})=>{
+      const yc=y(label)+y.bandwidth()/2;
+      data.forEach((d,i)=>{
+        const jitter=(Math.random()-0.5)*y.bandwidth()*0.5;
+        g.append('circle').attr('cx',x(d.Lactate)).attr('cy',yc+jitter).attr('r',4)
+          .attr('fill',color).attr('opacity',0.6)
+          .append('title').text(`Patient ${d.id}: Lactate ${d.Lactate} mmol/L`);
+      });
+    });
+
+    svg.append('text').attr('x',m.left+w/2).attr('y',H-4)
+      .attr('text-anchor','middle').attr('font-size','12px').attr('fill','#555').text('Lactate (mmol/L)');
+  },[]);
+  return <div ref={ref} className="dash-chart-svg"/>;
+}
+
 export default function SepsisPage() {
   return (
     <div className="dash-page">
@@ -245,6 +411,33 @@ export default function SepsisPage() {
             <FeatureBoxPlot/>
           </div>
           <div className="dash-insight">Across every feature — lactate, SOFA, heart rate, blood pressure — the septic shock group is clearly different. The boxes barely overlap, meaning these four features together provide strong early warning signals.</div>
+        </section>
+
+        <section className="dash-section">
+          <h2>Radar Chart — Clinical Profile: Shock vs No Shock</h2>
+          <p>A <strong>radar chart</strong> (also called a spider chart) plots multiple variables on axes that radiate from the centre. The further from the centre, the higher the value. Each group's average is drawn as a filled polygon — allowing an instant visual comparison of the full clinical profile.</p>
+          <div className="dash-chart-wrap" style={{maxWidth:460}}>
+            <RadarChart/>
+          </div>
+          <div className="dash-insight">The red polygon (septic shock) is uniformly larger than the blue polygon (sepsis only) on every axis — higher heart rate, higher respiratory rate, higher lactate, worse SOFA, more WBCs, higher temperature. The gap is largest on Lactate and SOFA, confirming those are the strongest discriminators.</div>
+        </section>
+
+        <section className="dash-section">
+          <h2>Stacked Bar — Septic Shock Rate by Age Group</h2>
+          <p>A <strong>stacked bar chart</strong> shows both the total number of patients and the breakdown between outcomes in one view. The percentage label above each bar is the shock rate for that age group.</p>
+          <div className="dash-chart-wrap" style={{maxWidth:520}}>
+            <AgeGroupStackedBar/>
+          </div>
+          <div className="dash-insight">The shock rate rises sharply with age. Patients aged 30–45 have a shock rate around 30%; patients aged 76+ have a rate above 70%. This confirms that age is a major independent risk factor — older patients have less physiological reserve to fight circulatory failure.</div>
+        </section>
+
+        <section className="dash-section">
+          <h2>Strip Plot — Lactate Distribution (Individual Patients)</h2>
+          <p>A <strong>strip plot</strong> (dot plot) shows every individual patient as a dot, spread along the lactate axis. Unlike a histogram, you can see each data point. The shaded regions mark clinically important thresholds. Dots are randomly jittered vertically to prevent overlap.</p>
+          <div className="dash-chart-wrap">
+            <StripPlot/>
+          </div>
+          <div className="dash-insight">Almost all septic shock patients (red) have lactate above 2 mmol/L, and many exceed 4 (the critical threshold). Sepsis-only patients (blue) are almost all below 2.5. The two groups are nearly perfectly separated by lactate alone — making it the single most actionable bedside measurement for early shock detection.</div>
         </section>
 
         <section className="dash-section">

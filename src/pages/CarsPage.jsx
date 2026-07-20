@@ -131,6 +131,172 @@ function YearLineChart() {
   return <div ref={ref} className="dash-chart-svg"/>;
 }
 
+/* ── Bubble Chart: HP × MPG, size = Weight ────────────── */
+function BubbleChart() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current; if (!el) return; el.innerHTML = '';
+    const W = el.clientWidth || 500, H = 340;
+    const m = {top:30,right:130,bottom:50,left:55};
+    const w = W-m.left-m.right, h = H-m.top-m.bottom;
+    const svg = d3.select(el).append('svg').attr('width',W).attr('height',H);
+    const g = svg.append('g').attr('transform',`translate(${m.left},${m.top})`);
+
+    const x = d3.scaleLinear().domain(d3.extent(clean,d=>d.horsepower)).nice().range([0,w]);
+    const y = d3.scaleLinear().domain(d3.extent(clean,d=>d.mpg)).nice().range([h,0]);
+    const r = d3.scaleSqrt().domain(d3.extent(clean,d=>d.weight)).range([3,18]);
+
+    g.append('g').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x).ticks(6))
+      .selectAll('line,path').attr('stroke','#ddd');
+    g.append('g').call(d3.axisLeft(y).ticks(5))
+      .selectAll('line,path').attr('stroke','#ddd');
+    g.append('g').selectAll('line').data(y.ticks(5)).enter().append('line')
+      .attr('x1',0).attr('x2',w).attr('y1',d=>y(d)).attr('y2',d=>y(d))
+      .attr('stroke','#f4f4f4').attr('stroke-dasharray','3,3');
+
+    g.selectAll('circle').data(clean).enter().append('circle')
+      .attr('cx',d=>x(d.horsepower)).attr('cy',d=>y(d.mpg))
+      .attr('r',d=>r(d.weight))
+      .attr('fill',d=>CYL_COLOR(d.cylinders)).attr('opacity',0.55)
+      .attr('stroke',d=>CYL_COLOR(d.cylinders)).attr('stroke-width',0.8)
+      .append('title').text(d=>`${d.name}\nHP: ${d.horsepower} | MPG: ${d.mpg}\nWeight: ${d.weight} lbs | ${d.cylinders} cyl`);
+
+    svg.append('text').attr('x',m.left+w/2).attr('y',H-6)
+      .attr('text-anchor','middle').attr('font-size','12px').attr('fill','#555').text('Horsepower');
+    svg.append('text').attr('transform',`translate(14,${m.top+h/2}) rotate(-90)`)
+      .attr('text-anchor','middle').attr('font-size','12px').attr('fill','#555').text('MPG');
+
+    // cylinder legend
+    const leg = svg.append('g').attr('transform',`translate(${W-m.right+8},${m.top})`);
+    leg.append('text').attr('y',-10).attr('font-size','10px').attr('fill','#888').text('Cylinders');
+    [3,4,5,6,8].forEach((c,i)=>{
+      leg.append('circle').attr('cx',8).attr('cy',i*20).attr('r',6).attr('fill',CYL_COLOR(c)).attr('opacity',0.7);
+      leg.append('text').attr('x',20).attr('y',i*20+4).attr('font-size','11px').attr('fill','#444').text(c);
+    });
+    // size legend
+    const sl = svg.append('g').attr('transform',`translate(${W-m.right+8},${m.top+120})`);
+    sl.append('text').attr('y',-10).attr('font-size','10px').attr('fill','#888').text('Weight (lbs)');
+    [2000,3000,4000].forEach((w2,i)=>{
+      sl.append('circle').attr('cx',r(w2)).attr('cy',i*30+r(w2)).attr('r',r(w2))
+        .attr('fill','none').attr('stroke','#aaa');
+      sl.append('text').attr('x',r(w2)*2+4).attr('y',i*30+r(w2)+4).attr('font-size','10px').attr('fill','#777').text(w2);
+    });
+  },[]);
+  return <div ref={ref} className="dash-chart-svg"/>;
+}
+
+/* ── MPG Heatmap: Cylinders × Year ──────────────────── */
+function MPGHeatmap() {
+  const ref = useRef(null);
+  useEffect(()=>{
+    const el=ref.current; if(!el) return; el.innerHTML='';
+    const cyls=[4,6,8];
+    const years=[...new Set(clean.map(d=>d.year))].sort();
+    const W=el.clientWidth||500, H=220;
+    const m={top:30,right:80,bottom:45,left:60};
+    const w=W-m.left-m.right, h=H-m.top-m.bottom;
+
+    const rollup=d3.rollup(clean,v=>d3.mean(v,d=>d.mpg),d=>d.cylinders,d=>d.year);
+    const cells=[];
+    cyls.forEach(c=>years.forEach(yr=>{
+      const v=rollup.get(c)?.get(yr);
+      if(v) cells.push({c,yr,v});
+    }));
+
+    const color=d3.scaleSequential(d3.interpolateYlOrRd).domain([d3.max(cells,d=>d.v),d3.min(cells,d=>d.v)]);
+    const svg=d3.select(el).append('svg').attr('width',W).attr('height',H);
+    const g=svg.append('g').attr('transform',`translate(${m.left},${m.top})`);
+
+    const xS=d3.scaleBand().domain(years).range([0,w]).padding(0.05);
+    const yS=d3.scaleBand().domain(cyls).range([0,h]).padding(0.05);
+
+    g.append('g').attr('transform',`translate(0,${h})`).call(d3.axisBottom(xS).tickFormat(d=>`'${d}`).tickValues(years.filter((_,i)=>i%2===0)));
+    g.append('g').call(d3.axisLeft(yS).tickFormat(d=>`${d} cyl`));
+
+    cells.forEach(({c,yr,v})=>{
+      g.append('rect').attr('x',xS(yr)).attr('y',yS(c))
+        .attr('width',xS.bandwidth()).attr('height',yS.bandwidth())
+        .attr('fill',color(v)).attr('rx',2)
+        .append('title').text(`${c} cyl, '${yr}: ${v.toFixed(1)} MPG avg`);
+      if(xS.bandwidth()>20){
+        g.append('text').attr('x',xS(yr)+xS.bandwidth()/2).attr('y',yS(c)+yS.bandwidth()/2+4)
+          .attr('text-anchor','middle').attr('font-size','9px')
+          .attr('fill',v<22?'#fff':'#333').text(v.toFixed(0));
+      }
+    });
+
+    svg.append('text').attr('x',m.left+w/2).attr('y',H-4)
+      .attr('text-anchor','middle').attr('font-size','12px').attr('fill','#555').text('Model Year');
+    svg.append('text').attr('transform',`translate(14,${m.top+h/2}) rotate(-90)`)
+      .attr('text-anchor','middle').attr('font-size','12px').attr('fill','#555').text('Cylinders');
+
+    // colour bar
+    const cbG=svg.append('g').attr('transform',`translate(${m.left+w+10},${m.top})`);
+    const cbH=h, steps=20;
+    d3.range(steps).forEach(i=>{
+      cbG.append('rect').attr('x',0).attr('y',i*(cbH/steps)).attr('width',10).attr('height',cbH/steps+1)
+        .attr('fill',color(d3.min(cells,d=>d.v)+(d3.max(cells,d=>d.v)-d3.min(cells,d=>d.v))*(1-i/(steps-1))));
+    });
+    cbG.append('text').attr('x',14).attr('y',10).attr('font-size','9px').attr('fill','#555').text('High');
+    cbG.append('text').attr('x',14).attr('y',cbH).attr('font-size','9px').attr('fill','#555').text('Low');
+  },[]);
+  return <div ref={ref} className="dash-chart-svg"/>;
+}
+
+/* ── Lollipop Chart: MPG by Origin/Year bracket ─────── */
+function LollipopChart() {
+  const ref = useRef(null);
+  useEffect(()=>{
+    const el=ref.current; if(!el) return; el.innerHTML='';
+    // bin years into eras
+    const eras = [{label:'1970–72',min:70,max:72},{label:'1973–75',min:73,max:75},
+                  {label:'1976–78',min:76,max:78},{label:'1979–82',min:79,max:82}];
+    const data = eras.map(e=>({
+      label:e.label,
+      mpg4: d3.mean(clean.filter(d=>d.cylinders===4&&d.year>=e.min&&d.year<=e.max),d=>d.mpg)||0,
+      mpg6: d3.mean(clean.filter(d=>d.cylinders===6&&d.year>=e.min&&d.year<=e.max),d=>d.mpg)||0,
+      mpg8: d3.mean(clean.filter(d=>d.cylinders===8&&d.year>=e.min&&d.year<=e.max),d=>d.mpg)||0,
+    }));
+
+    const W=el.clientWidth||500, H=280;
+    const m={top:20,right:130,bottom:40,left:80};
+    const w=W-m.left-m.right, h=H-m.top-m.bottom;
+    const svg=d3.select(el).append('svg').attr('width',W).attr('height',H);
+    const g=svg.append('g').attr('transform',`translate(${m.left},${m.top})`);
+
+    const y=d3.scaleBand().domain(data.map(d=>d.label)).range([0,h]).padding(0.4);
+    const x=d3.scaleLinear().domain([0,42]).range([0,w]);
+    g.append('g').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x).ticks(6));
+    g.append('g').call(d3.axisLeft(y));
+    g.append('g').selectAll('line').data(x.ticks(6)).enter().append('line')
+      .attr('x1',d=>x(d)).attr('x2',d=>x(d)).attr('y1',0).attr('y2',h)
+      .attr('stroke','#f0f0f0').attr('stroke-dasharray','3,3');
+
+    const cyls=[{k:'mpg4',c:CYL_COLOR(4),off:-8},{k:'mpg6',c:CYL_COLOR(6),off:0},{k:'mpg8',c:CYL_COLOR(8),off:8}];
+    data.forEach(d=>{
+      cyls.forEach(({k,c,off})=>{
+        const v=d[k]; if(!v) return;
+        const yc=y(d.label)+y.bandwidth()/2+off;
+        g.append('line').attr('x1',0).attr('x2',x(v)).attr('y1',yc).attr('y2',yc)
+          .attr('stroke',c).attr('stroke-width',2).attr('opacity',0.6);
+        g.append('circle').attr('cx',x(v)).attr('cy',yc).attr('r',6)
+          .attr('fill',c).attr('stroke','#fff').attr('stroke-width',1.5)
+          .append('title').text(`${d.label} | ${k.replace('mpg','')}-cyl: ${v.toFixed(1)} MPG`);
+      });
+    });
+
+    const leg=svg.append('g').attr('transform',`translate(${m.left+w+10},${m.top})`);
+    leg.append('text').attr('y',-8).attr('font-size','10px').attr('fill','#888').text('Cylinders');
+    [{c:CYL_COLOR(4),l:'4 cyl'},{c:CYL_COLOR(6),l:'6 cyl'},{c:CYL_COLOR(8),l:'8 cyl'}].forEach(({c,l},i)=>{
+      leg.append('circle').attr('cx',7).attr('cy',i*22).attr('r',6).attr('fill',c);
+      leg.append('text').attr('x',18).attr('y',i*22+4).attr('font-size','11px').attr('fill','#444').text(l);
+    });
+    svg.append('text').attr('x',m.left+w/2).attr('y',H-5)
+      .attr('text-anchor','middle').attr('font-size','12px').attr('fill','#555').text('Average MPG');
+  },[]);
+  return <div ref={ref} className="dash-chart-svg"/>;
+}
+
 const corr = (a, b) => {
   const ma=d3.mean(a), mb=d3.mean(b);
   return d3.sum(a.map((v,i)=>(v-ma)*(b[i]-mb))) /
@@ -251,6 +417,33 @@ export default function CarsPage() {
             <CylBarChart/>
           </div>
           <div className="dash-insight">4-cylinder cars average around 30 MPG. 8-cylinder cars average around 15 MPG — half as efficient. The 3-cylinder Mazda RX-2 is a rotary engine outlier.</div>
+        </section>
+
+        <section className="dash-section">
+          <h2>Bubble Chart — Three Variables at Once</h2>
+          <p>A <strong>bubble chart</strong> extends a scatter plot by encoding a third variable in the <strong>size</strong> of each dot. Here: x = horsepower, y = MPG, and bubble size = car weight. Bigger circles are heavier cars. Colour = cylinder count.</p>
+          <div className="dash-chart-wrap">
+            <BubbleChart/>
+          </div>
+          <div className="dash-insight">The heaviest, most powerful, most-cylindered cars sit in the bottom-right (large purple circles). Lightweight 4-cylinder cars cluster top-left as small blue bubbles. The three dimensions tell a perfectly consistent story: power, weight, and cylinders all move together — and all hurt fuel economy.</div>
+        </section>
+
+        <section className="dash-section">
+          <h2>MPG Heatmap — Cylinders × Model Year</h2>
+          <p>A <strong>heatmap</strong> uses colour to show a third dimension across a grid. Here each row is a cylinder count, each column is a model year, and the colour shows average MPG. Darker red = lower MPG, lighter yellow = higher MPG.</p>
+          <div className="dash-chart-wrap">
+            <MPGHeatmap/>
+          </div>
+          <div className="dash-insight">The top-left corner (8 cylinders, early 1970s) is the darkest red — averaging under 15 MPG. The bottom-right (4 cylinders, early 1980s) is bright yellow — above 30 MPG. You can see the improvement year-by-year within every cylinder group, reflecting the industry-wide efficiency push after the oil crisis.</div>
+        </section>
+
+        <section className="dash-section">
+          <h2>Lollipop Chart — MPG by Era and Cylinder Count</h2>
+          <p>A <strong>lollipop chart</strong> is a cleaner alternative to a bar chart for comparing multiple series. Each dot is the average MPG for one cylinder group in one era. The line from the axis to the dot shows the value clearly without the visual weight of a full bar.</p>
+          <div className="dash-chart-wrap">
+            <LollipopChart/>
+          </div>
+          <div className="dash-insight">Across every era, 4-cylinder cars outperform 6- and 8-cylinder cars by a wide margin. The gap between 4-cyl and 8-cyl actually widens over time — 4-cylinder cars improved much faster. By the 1979–82 era, a 4-cylinder car averaged more than twice the MPG of an 8-cylinder car.</div>
         </section>
 
         <section className="dash-section">
