@@ -1,4 +1,5 @@
 import './Hero.css';
+import profilePhoto from '/profile.jpg';
 
 export default function Hero() {
   return (
@@ -26,7 +27,7 @@ export default function Hero() {
         <div className="hero-avatar">
           {/* Replace profile.jpg with your photo saved to public/profile.jpg */}
           <img
-            src="/profile.jpg"
+            src={profilePhoto}
             alt="Pratheeksha Maya Jayaprasad"
             className="avatar-photo"
             onError={e => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex'; }}
