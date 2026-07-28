@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import resumePdf from '/Pratheeksha_Maya_Jayaprasad.pdf';
 import './Contact.css';
 
 export default function Contact() {
@@ -36,7 +37,7 @@ export default function Contact() {
             </li>
             <li>
               <span className="contact-icon">↓</span>
-              <a href="/Pratheeksha_Maya_Jayaprasad.pdf" download>Download Resume (PDF)</a>
+              <a href={resumePdf} download="Pratheeksha_Maya_Jayaprasad.pdf">Download Resume (PDF)</a>
             </li>
           </ul>
         </div>

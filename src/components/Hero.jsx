@@ -25,15 +25,12 @@ export default function Hero() {
           </div>
         </div>
         <div className="hero-avatar">
-          {/* Replace profile.jpg with your photo saved to public/profile.jpg */}
-          <img
-            src={profilePhoto}
-            alt="Pratheeksha Maya Jayaprasad"
-            className="avatar-photo"
-            onError={e => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex'; }}
-          />
-          <div className="avatar-placeholder" style={{display:'none'}}>
-            <span>PMJ</span>
+          <div className="avatar-wrap">
+            <img
+              src={profilePhoto}
+              alt="Pratheeksha Maya Jayaprasad"
+              className="avatar-photo"
+            />
           </div>
         </div>
       </div>
