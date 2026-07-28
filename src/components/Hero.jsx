@@ -5,16 +5,18 @@ export default function Hero() {
     <section id="about" className="hero">
       <div className="container hero-inner">
         <div className="hero-text">
-          <p className="hero-label">WFM Analyst</p>
-          <h1>Pratheeeksha Maya Jayaprasad</h1>
+          <p className="hero-label">UKG WFM Consultant &amp; Business Analyst</p>
+          <h1>Pratheeksha Maya Jayaprasad</h1>
           <p className="hero-tagline">
-            Bridging the gap between workforce operations and technology solutions.
+            9+ years turning complex workforce data into clear decisions.
           </p>
           <p className="hero-bio">
-            Experienced WFM Analyst with a passion for translating complex workforce
-            requirements into actionable insights and solutions. Skilled in timekeeping,
-            scheduling, pay rules, accruals, and forecasting across UKG Dimensions
-            and enterprise workforce management platforms.
+            UKG Workforce Management Consultant with 6+ years hands-on with UKG Pro
+            WFM/Dimensions and Kronos Workforce Central. I specialise in enterprise
+            implementation support, pay policy configuration, payroll integration, QA
+            validation, and workforce analytics — partnering with HR, Payroll, and
+            Operations teams to get things right from go-live through hypercare.
+            Currently pursuing an MS in Business Analytics at Tennessee Wesleyan University.
           </p>
           <div className="hero-actions">
             <a href="#projects" className="btn btn-primary" onClick={e => { e.preventDefault(); document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' }); }}>View My Work</a>
@@ -22,7 +24,14 @@ export default function Hero() {
           </div>
         </div>
         <div className="hero-avatar">
-          <div className="avatar-placeholder">
+          {/* Replace profile.jpg with your photo saved to public/profile.jpg */}
+          <img
+            src="/profile.jpg"
+            alt="Pratheeksha Maya Jayaprasad"
+            className="avatar-photo"
+            onError={e => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex'; }}
+          />
+          <div className="avatar-placeholder" style={{display:'none'}}>
             <span>PMJ</span>
           </div>
         </div>

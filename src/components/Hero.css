@@ -85,6 +85,16 @@
   flex-shrink: 0;
 }
 
+.avatar-photo {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top center;
+  border: 4px solid var(--gold);
+  display: block;
+}
+
 .avatar-placeholder {
   width: 200px;
   height: 200px;

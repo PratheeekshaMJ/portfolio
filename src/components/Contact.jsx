@@ -26,17 +26,17 @@ export default function Contact() {
           <ul className="contact-details">
             <li>
               <span className="contact-icon">✉</span>
-              <a href="mailto:your@email.com">your@email.com</a>
+              <a href="mailto:pratheeekshamj@gmail.com">pratheeekshamj@gmail.com</a>
             </li>
             <li>
               <span className="contact-icon">in</span>
-              <a href="https://linkedin.com/in/yourprofile" target="_blank" rel="noreferrer">
-                linkedin.com/in/yourprofile
+              <a href="https://www.linkedin.com/in/pratheeekshamj/" target="_blank" rel="noreferrer">
+                linkedin.com/in/pratheeekshamj
               </a>
             </li>
             <li>
               <span className="contact-icon">↓</span>
-              <a href="/resume.pdf" download>Download Resume (PDF)</a>
+              <a href="/Pratheeksha_Maya_Jayaprasad.pdf" download>Download Resume (PDF)</a>
             </li>
           </ul>
         </div>
