@@ -1,5 +1,5 @@
 import './Hero.css';
-import profilePhoto from '/profile.png';
+import profilePhoto from '/profile.jpg';
 
 export default function Hero() {
   return (
